@@ -1,0 +1,8 @@
+*__pycache__*
+checkpoints/*
+viton_gan/data/*
+viton_gan/tmp/*
+test/*
+log/*
+*.sh
+*.ipynb
