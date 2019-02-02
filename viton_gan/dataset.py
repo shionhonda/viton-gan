@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import json
+import random
 from PIL import Image
 from PIL import ImageDraw
 import torch
@@ -10,13 +11,10 @@ import torchvision.transforms as transforms
 class DatasetBase(Dataset):
     """Base dataset for VITON-GAN.
     """
-    def __init__(self, opt):
+    def __init__(self, data_root, mode, data_list):
         super(DatasetBase, self).__init__()
         self.opt = opt
-        self.root = opt.dataroot
-        self.datamode = opt.datamode # train or test
-        self.data_path = os.path.join(opt.dataroot, opt.datamode)
-        self.data_list = opt.data_list
+        self.data_path = os.path.join(data_root, mode)
         self.fine_height = 256
         self.fine_width = 192
         self.radius = 5
@@ -27,7 +25,7 @@ class DatasetBase(Dataset):
         
         person_names = []
         cloth_names = []
-        with open(os.path.join(opt.dataroot, opt.data_list), 'r') as f:
+        with open(os.path.join(data_root, data_list), 'r') as f:
             for line in f.readlines():
                 person_name, cloth_name = line.strip().split()
                 person_names.append(person_name)
@@ -115,20 +113,34 @@ class DatasetBase(Dataset):
         # Cloth-agnostic representation
         feature_tensor = torch.cat([feature_shape_tensor, feature_head_tensor, feature_pose_tensor], 0) 
 
-        result = {
+        data = {
             'person_name': person_name,    # For visualization or ground truth
             'person': person_tensor, # For visualization or ground truth
             'feature': feature_tensor,   # For input
+            'pose': pose_tensor, # For visualization
+            'head': feature_head_tensor, # For visualization
+            'shape': feature_shape_tensor, # For visualization
             'cloth_parse':     cloth_parse_tensor,   # For ground truth
             'body_mask': body_mask_tensor     # For ground truth
             }
 
-        return result 
+        return data 
 
 def binarized_tensor(arr):
     mask = (arr >= 128).astype(np.float32)
     return torch.from_numpy(mask).unsqueeze(0) # [0,1]
 
+def random_horizontal_flip(data):
+    rand = random.random()
+    if rand < 0.5:
+        return data
+    else:
+        for key, value in data.items():
+            if 'name' in key:
+                continue
+            else:
+                data[key] = torch.flip(value, [2]) # 2 for width
+    return data
 
 class GMMDataset(DatasetBase):
     def __getitem__(self, index):
@@ -140,13 +152,14 @@ class GMMDataset(DatasetBase):
         grid_im = Image.open('grid.png')
         grid_tensor = self.transform(grid_im)
 
-        result = self._get_item_base(index)
-        result['cloth_name'] = cloth_name # For visualization or input
-        result['cloth'] = cloth_tensor # For visualization or input
-        result['cloth_mask'] = cloth_mask_tensor # For input
-        result['grid'] = grid_tensor # For visualization
+        data = self._get_item_base(index)
+        data['cloth_name'] = cloth_name # For visualization or input
+        data['cloth'] = cloth_tensor # For visualization or input
+        data['cloth_mask'] = cloth_mask_tensor # For input
+        data['grid'] = grid_tensor # For visualization
+        data = random_horizontal_flip(data) # Data augmentation
 
-        return result
+        return data
 
 class TOMDataset(DatasetBase):
     def __getitem__(self, index):
@@ -156,9 +169,10 @@ class TOMDataset(DatasetBase):
         cloth_mask_im = Image.open(os.path.join(self.data_path, 'warp-cloth-mask', cloth_name))
         cloth_mask_tensor = binarized_tensor(np.array(cloth_mask_im))
 
-        result = self._get_item_base(index)
-        result['cloth_name'] = cloth_name # For visualization or input
-        result['cloth'] = cloth_tensor # For visualization or input
-        result['cloth_mask'] = cloth_mask_tensor # For input
+        data = self._get_item_base(index)
+        data['cloth_name'] = cloth_name # For visualization or input
+        data['cloth'] = cloth_tensor # For visualization or input
+        data['cloth_mask'] = cloth_mask_tensor # For input
+        data = random_horizontal_flip(data) # Data augmentation
 
-        return result
+        return data
