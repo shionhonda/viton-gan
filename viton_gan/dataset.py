@@ -15,11 +15,11 @@ class DatasetBase(Dataset):
         self.opt = opt
         self.root = opt.dataroot
         self.datamode = opt.datamode # train or test
-        self.data_list = opt.data_list
-        self.fine_height = opt.fine_height
-        self.fine_width = opt.fine_width
-        self.radius = opt.radius
         self.data_path = os.path.join(opt.dataroot, opt.datamode)
+        self.data_list = opt.data_list
+        self.fine_height = 256
+        self.fine_width = 192
+        self.radius = 5
         self.transform = transforms.Compose([
                 transforms.ToTensor(), # [0,255] to [0,1]
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # [0,1] to [-1,1]
@@ -39,9 +39,6 @@ class DatasetBase(Dataset):
     def __len__(self):
         return len(self.person_names)
 
-    def name(self):
-        return "Dataset"
-
     def _get_mask_arrays(self, person_parse):
         """Split person_parse array into mask channels
         """
@@ -50,7 +47,7 @@ class DatasetBase(Dataset):
                 (person_parse == 2).astype(np.float32) + \
                 (person_parse == 4).astype(np.float32) + \
                 (person_parse == 13).astype(np.float32) # Hat, Hair, Sunglasses, Face
-        head = (head_mask > 0).astype(np.float32)
+        head = (head > 0).astype(np.float32)
         cloth = (person_parse == 5).astype(np.float32) + \
                 (person_parse == 6).astype(np.float32) + \
                 (person_parse == 7).astype(np.float32) # Upper-clothes, Dress, Coat
@@ -165,26 +162,3 @@ class TOMDataset(DatasetBase):
         result['cloth_mask'] = cloth_mask_tensor # For input
 
         return result
-
-class VTDataLoader(object):
-    """Data loader for GMM or TOM dataset
-    """
-    def __init__(self, opt, dataset):
-        super(VTDataLoader, self).__init__()
-        if opt.shuffle :
-            train_sampler = torch.utils.data.sampler.RandomSampler(dataset)
-        else:
-            train_sampler = None
-        self.data_loader = torch.utils.data.DataLoader(
-                dataset, batch_size=opt.batch_size, shuffle=(train_sampler is None),
-                num_workers=opt.workers, pin_memory=True, sampler=train_sampler)
-        self.dataset = dataset
-        self.data_iter = self.data_loader.__iter__()
-       
-    def next_batch(self):
-        try:
-            batch = self.data_iter.__next__()
-        except StopIteration:
-            self.data_iter = self.data_loader.__iter__()
-            batch = self.data_iter.__next__()
-        return batch
