@@ -11,13 +11,12 @@ import torchvision.transforms as transforms
 class DatasetBase(Dataset):
     """Base dataset for VITON-GAN.
     """
-    def __init__(self, data_root, mode, data_list):
+    def __init__(self, opt, mode, data_list):
         super(DatasetBase, self).__init__()
-        self.opt = opt
-        self.data_path = os.path.join(data_root, mode)
-        self.fine_height = 256
-        self.fine_width = 192
-        self.radius = 5
+        self.data_path = os.path.join(opt.data_root, mode)
+        self.fine_height = opt.fine_height
+        self.fine_width = opt.fine_width
+        self.radius = opt.radius
         self.transform = transforms.Compose([
                 transforms.ToTensor(), # [0,255] to [0,1]
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)) # [0,1] to [-1,1]
@@ -25,7 +24,7 @@ class DatasetBase(Dataset):
         
         person_names = []
         cloth_names = []
-        with open(os.path.join(data_root, data_list), 'r') as f:
+        with open(os.path.join(opt.data_root, data_list), 'r') as f:
             for line in f.readlines():
                 person_name, cloth_name = line.strip().split()
                 person_names.append(person_name)
@@ -95,8 +94,8 @@ class DatasetBase(Dataset):
         person_tensor = self.transform(person_im) # [-1,1]
 
         # Person-parse
-        person_name = person_name.replace('.jpg', '.png')
-        person_parse = Image.open(os.path.join(self.data_path, 'person-parse', person_name))
+        parse_name = person_name.replace('.jpg', '.png')
+        person_parse = Image.open(os.path.join(self.data_path, 'person-parse', parse_name))
         person_parse = np.array(person_parse) # shape: (256,192,3)
         shape_mask, head_mask, cloth_mask, body_mask = self._get_mask_arrays(person_parse)
         shape_im = Image.fromarray((shape_mask*255).astype(np.uint8))
