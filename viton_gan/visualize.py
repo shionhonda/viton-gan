@@ -63,7 +63,7 @@ def save_images(img_tensors, img_names, save_dir):
         array = tensor_for_image(img_tensor)        
         Image.fromarray(array).save(os.path.join(save_dir, img_name))
 
-def test_visual(img_tensors_list, img_names, save_dir):
+def save_visual(img_tensors_list, img_names, save_dir):
     img_tensors = tensor_list_for_board(img_tensors_list)
 
     for img_tensor, img_name in zip(img_tensors, img_names):
