@@ -6,7 +6,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
 from torch.utils.data import DataLoader
-from dataset import GMMDataset
+from dataset import TOMDataset
 from networks import UnetGenerator, VGGLoss, load_checkpoint, save_checkpoint, NLayerDiscriminator
 from visualize import board_add_images
 from utils import mkdir
@@ -22,9 +22,8 @@ class TOMTrainer:
 
         self.dataloader_train = dataloader_train
         self.dataloader_val = dataloader_val
-        self.optim = torch.optim.Adam(self.model.parameters(), lr=1e-4, betas=(0.5, 0.999))
-        self.optim_g = torch.optim.Adam(gen.parameters(), lr=opt.lr, betas=(0.5, 0.999))
-        self.optim_d = torch.optim.Adam(dis.parameters(), lr=opt.lr, betas=(0.5, 0.999))
+        self.optim_g = torch.optim.Adam(gen.parameters(), lr=1e-4, betas=(0.5, 0.999))
+        self.optim_d = torch.optim.Adam(dis.parameters(), lr=1e-4, betas=(0.5, 0.999))
         self.criterionL1 = nn.L1Loss()
         self.criterionVGG = VGGLoss()
         self.criterionAdv = torch.nn.BCELoss()
@@ -32,7 +31,8 @@ class TOMTrainer:
         self.save_dir = save_dir
         self.n_step = n_step
         self.step = 0
-        print('Total Parameters:', sum([p.nelement() for p in self.model.parameters()]))
+        print('Generator Parameters:', sum([p.nelement() for p in self.gen.parameters()]))
+        print('Discriminator Parameters:', sum([p.nelement() for p in self.dis.parameters()]))
 
     def train(self, epoch):
         """Iterate 1 epoch over train data and return loss
@@ -48,7 +48,7 @@ class TOMTrainer:
         data_iter = tqdm(enumerate(data_loader), desc='epoch: %d' % (epoch), total=len(data_loader), bar_format='{l_bar}{r_bar}')
 
         total_loss = 0.0
-        FloatTensor = torch.cuda.FloatTensor if cuda else torch.FloatTensor
+        FloatTensor = torch.cuda.FloatTensor if torch.cuda.is_available() else torch.FloatTensor
 
         for i, _data in data_iter:
             data = {}
@@ -62,8 +62,8 @@ class TOMTrainer:
 
             outputs = self.gen(torch.cat([data['feature'], cloth],1)) # (batch, channel, height, width)
             rendered_person, composition_mask = torch.split(outputs, 3,1)
-            rendered_person = F.tanh(rendered_person)
-            composition_mask = F.sigmoid(composition_mask)
+            rendered_person = torch.tanh(rendered_person)
+            composition_mask = torch.sigmoid(composition_mask)
             tryon_person = cloth*composition_mask + rendered_person*(1-composition_mask)
             visuals = [[data['head'], data['shape'], data['pose']], 
                     [cloth, cloth_mask*2-1, composition_mask*2-1], 
@@ -81,8 +81,8 @@ class TOMTrainer:
             w = min(1, 2*self.step/self.n_step)
             loss_g = l_l1 + l_vgg + l_mask + w*l_adv
             # Loss for discriminator
-            loss_d = ( self.criterionAdv(dis(torch.cat([data['feature'], cloth, person],1)), real) +\
-                        self.criterionAdv(dis(torch.cat([data['feature'], cloth, tryon_person],1).detach()), fake) )\
+            loss_d = ( self.criterionAdv(self.dis(torch.cat([data['feature'], cloth, person],1)), real) +\
+                        self.criterionAdv(self.dis(torch.cat([data['feature'], cloth, tryon_person],1).detach()), fake) )\
                         / 2 
 
             if train:
@@ -122,6 +122,10 @@ def get_opt():
     parser.add_argument('--gpu_id', '-g', type=str, default='0', help='GPU ID')
     parser.add_argument('--log_freq', type=int, default=100, help='log frequency')
     parser.add_argument('--radius', type=int, default=5)
+    # Not used
+    parser.add_argument('--fine_width', type=int, default=192)
+    parser.add_argument('--fine_height', type=int, default=256)
+    parser.add_argument('--grid_size', type=int, default=5, help='hyperparameter for the network')
     opt = parser.parse_args()
     return opt
 
