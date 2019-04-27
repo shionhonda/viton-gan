@@ -78,8 +78,7 @@ class TOMTrainer:
             l_vgg = self.criterionVGG(tryon_person, person)
             dis_fake = self.dis(torch.cat([data['feature'], cloth, tryon_person],1)) # Dis forward
             l_adv = self.criterionAdv(dis_fake, real)
-            w = min(1, 2*self.step/self.n_step)
-            loss_g = l_l1 + l_vgg + l_mask + w*l_adv
+            loss_g = l_l1 + l_vgg + l_mask + l_adv/batch_size
             # Loss for discriminator
             loss_d = ( self.criterionAdv(self.dis(torch.cat([data['feature'], cloth, person],1)), real) +\
                         self.criterionAdv(self.dis(torch.cat([data['feature'], cloth, tryon_person],1).detach()), fake) )\
@@ -101,7 +100,6 @@ class TOMTrainer:
                 'avg_loss': total_loss/(i+1),
                 'loss_recon': l_l1.item() + l_vgg.item() + l_mask.item(),
                 'loss_g': l_adv.item(),
-                'w': w,
                 'loss_d': loss_d.item()
             }
             if train and i%self.log_freq==0:
@@ -136,7 +134,7 @@ def main():
     print('Loading dataset')
     dataset_train = TOMDataset(opt, mode='train', data_list='train_pairs.txt')
     dataloader_train = DataLoader(dataset_train, batch_size=opt.batch_size, num_workers=opt.n_worker, shuffle=True)
-    dataset_val = TOMDataset(opt, mode='val', data_list='val_pairs.txt')
+    dataset_val = TOMDataset(opt, mode='val', data_list='val_pairs.txt', train=False)
     dataloader_val = DataLoader(dataset_val, batch_size=opt.batch_size, num_workers=opt.n_worker, shuffle=True)
 
     save_dir = os.path.join(opt.out_dir, opt.name)

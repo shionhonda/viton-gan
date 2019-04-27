@@ -13,17 +13,41 @@ tqdm
 
 In addition, you need OpenPose and Look Into Person (LIP) to get keypoints and segmentation of the human body.
 
-### Download
+### Download repository
 ```
 $ git clone https://github.com/shionhonda/viton-gan
 ```
-
+### Trained model
+You can get trained model [here](https://drive.google.com/drive/folders/1Zcc55A1w6bUNG4cMYnmsIPvOJWvBsmDH?usp=sharing).
 ## Usage
+VITON-GAN requires the keypoints from OpenPose and segmentation labels from Look Into Person.   
+First, prepare the following directories in viton-gan/viton_gan/data:
+
+- cloth
+- cloth mask
+- person
+- person-parse
+- pose
+
+Second, prepare a file that makes pairs of clothing and human. For example, `test_pairs.txt`:
+
+```
+000001_0.jpg 001744_1.jpg
+000010_0.jpg 004325_1.jpg
+.
+.
+.
+```
+
+You can find more information here: https://github.com/sergeywong/cp-vton
+
+After preparing the data and the list, run the following command:
 
 ```
 $ python train_gmm.py
-$ python run_gmm.py
+$ python run_gmm.py # warp clothing so that it fit on the body
 $ python train_tom.py
+$ python run_gmm.py # generate virtual try-on image
 ```
 
 ## Cite
@@ -50,8 +74,8 @@ benchmark for human parsing. In Proceedings of the IEEE Conference
 on Computer Vision and Pattern Recognition (2017).  
 [4] HAN X., WU Z., WU Z., YU R., DAVIS L. S.: Viton: An
 image-based virtual try-on network. In Proceedings of the IEEE Conference on Computer Vision and Pattern Recognition (2018).  
-[4] KARRAS T., LAINE S., AILA T.: A style-based generator architecture for generative adversarial networks. arXiv preprint
+[5] KARRAS T., LAINE S., AILA T.: A style-based generator architecture for generative adversarial networks. arXiv preprint
 arXiv:1812.04948 (2018).  
-[5] WANG B., ZHENG H., LIANG X., CHEN Y., LIN L., YANG
+[6] WANG B., ZHENG H., LIANG X., CHEN Y., LIN L., YANG
 M.: Toward characteristic-preserving image-based virtual try-on network. In Proceedings of the European Conference on Computer Vision
 (2018).

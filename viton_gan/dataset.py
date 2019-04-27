@@ -11,10 +11,10 @@ import torchvision.transforms as transforms
 class DatasetBase(Dataset):
     """Base dataset for VITON-GAN.
     """
-    def __init__(self, opt, mode, data_list):
+    def __init__(self, opt, mode, data_list, train=True):
         super(DatasetBase, self).__init__()
         self.data_path = os.path.join(opt.data_root, mode)
-        self.mode = mode
+        self.train = train
         self.fine_height = opt.fine_height
         self.fine_width = opt.fine_width
         self.radius = opt.radius
@@ -157,7 +157,7 @@ class GMMDataset(DatasetBase):
         data['cloth'] = cloth_tensor # For visualization or input
         data['cloth_mask'] = cloth_mask_tensor # For input
         data['grid'] = grid_tensor # For visualization
-        if self.mode=='train':
+        if self.train:
             data = random_horizontal_flip(data) # Data augmentation
 
         return data
@@ -174,6 +174,7 @@ class TOMDataset(DatasetBase):
         data['cloth_name'] = cloth_name # For visualization or input
         data['cloth'] = cloth_tensor # For visualization or input
         data['cloth_mask'] = cloth_mask_tensor # For input
-        data = random_horizontal_flip(data) # Data augmentation
+        if self.train:
+            data = random_horizontal_flip(data) # Data augmentation
 
         return data
