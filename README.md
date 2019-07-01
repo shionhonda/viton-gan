@@ -1,5 +1,6 @@
 # VITON-GAN  
-Implementation of the paper "VITON-GAN: Virtual Try-on Image Generator Trained with Adversarial Loss" by Shion Honda.
+Implementation of the paper "VITON-GAN: Virtual Try-on Image Generator Trained with Adversarial Loss" by Shion Honda.  
+https://diglib.eg.org/handle/10.2312/egp20191043
 
 ## Installation
 ### Prerequisites
