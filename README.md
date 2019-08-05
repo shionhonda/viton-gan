@@ -55,11 +55,15 @@ $ python run_gmm.py # generate virtual try-on image
 If you use this repository in your research, please include the paper in your references.
 
 ```
-@inproceedings{Honda2019VitonGan,
-  author = {Honda, Shion},
-  title = {VITON-GAN: Virtual Try-on Image Generator Trained with Adversarial Loss},
-  booktitle = {Proceedings of EuroGraphics},
-  year = {2019},
+@inproceedings {p.20191043,
+booktitle = {Eurographics 2019 - Posters},
+editor = {Fusiello, Andrea and Bimber, Oliver},
+title = {{VITON-GAN: Virtual Try-on Image Generator Trained with Adversarial Loss}},
+author = {Honda, Shion},
+year = {2019},
+publisher = {The Eurographics Association},
+ISSN = {1017-4656},
+DOI = {10.2312/egp.20191043}
 }
 ```
 
